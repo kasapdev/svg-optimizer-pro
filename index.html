@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08090d">
+  <meta name="description" content="Strip cruft, collapse whitespace and round path precision to shrink SVGs, with a live before/after preview — a fast, private, offline SVG optimizer.">
+  <title>SVG Optimizer Pro — Web Utility Suite</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar container">
+    <a class="brand" href="https://github.com/kasapdev/svg-optimizer-pro" aria-label="Back to SVG Optimizer Pro">
+      <span class="logo" aria-hidden="true">
+        <!-- shrink / compress icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>
+        </svg>
+      </span>
+      <span class="col" style="gap:0">
+        <span>SVG Optimizer Pro</span>
+        <span class="sub">Web Utility Suite</span>
+      </span>
+    </a>
+    <span class="spacer"></span>
+
+    <span id="statusBadge" class="badge" role="status" aria-live="polite" title="Optimization status">
+      <span class="status-dot" aria-hidden="true"></span><span id="statusText">Ready</span>
+    </span>
+
+    <button class="btn btn--icon" data-shortcut-help title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="4" width="20" height="16" rx="2"/>
+        <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/>
+      </svg>
+    </button>
+    <button class="btn btn--icon" data-theme-toggle title="Toggle theme" aria-label="Toggle theme">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </header>
+
+  <main class="container">
+    <!-- Toolbar -->
+    <section class="panel toolbar-panel fade-in" aria-label="Toolbar">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button id="btnOptimize" class="btn btn--primary" title="Optimize (Ctrl/Cmd+Enter)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>
+            Optimize
+          </button>
+          <button id="btnUpload" class="btn btn--sm" title="Upload an .svg file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            Upload
+          </button>
+          <input type="file" id="fileInput" accept=".svg,image/svg+xml" hidden>
+          <button id="btnSample" class="btn btn--sm btn--ghost" title="Load a sample SVG">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+            Sample
+          </button>
+          <button id="btnClear" class="btn btn--sm btn--ghost" title="Clear everything">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Clear
+          </button>
+        </div>
+
+        <span class="spacer hide-sm"></span>
+
+        <div class="toolbar-group">
+          <button id="btnCopy" class="btn btn--sm" title="Copy optimized SVG">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button id="btnDownload" class="btn btn--sm" title="Download .svg (Ctrl/Cmd+S)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download
+          </button>
+        </div>
+      </div>
+
+      <div class="options-row">
+        <label class="check" title="Remove XML comments">
+          <span class="switch">
+            <input type="checkbox" id="optStripComments" checked aria-label="Strip comments">
+            <span class="track"></span><span class="thumb"></span>
+          </span>
+          <span class="secondary">Strip comments</span>
+        </label>
+
+        <label class="check" title="Removing title/desc affects accessibility (screen readers)">
+          <span class="switch">
+            <input type="checkbox" id="optStripTitleDesc" checked aria-label="Strip title and desc elements">
+            <span class="track"></span><span class="thumb"></span>
+          </span>
+          <span class="secondary">Strip title/desc <span class="muted">(affects a11y)</span></span>
+        </label>
+
+        <label class="check" title="Remove Inkscape/Sodipodi/RDF/Dublin-Core editor cruft">
+          <span class="switch">
+            <input type="checkbox" id="optStripMetadata" checked aria-label="Strip editor metadata">
+            <span class="track"></span><span class="thumb"></span>
+          </span>
+          <span class="secondary">Strip editor metadata</span>
+        </label>
+
+        <label class="check" title="Collapse indentation/whitespace between tags">
+          <span class="switch">
+            <input type="checkbox" id="optCollapseWhitespace" checked aria-label="Collapse whitespace">
+            <span class="track"></span><span class="thumb"></span>
+          </span>
+          <span class="secondary">Collapse whitespace</span>
+        </label>
+
+        <div class="field-inline">
+          <label for="precisionInput">Decimal precision</label>
+          <input type="number" id="precisionInput" min="0" max="4" step="1" value="2" aria-label="Decimal precision">
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-pane editor -->
+    <section class="editor rise" aria-label="SVG editor">
+      <!-- Input pane -->
+      <div class="pane panel pane--input">
+        <div class="pane-head">
+          <h2 class="pane-title">Input</h2>
+          <span id="inputStats" class="muted pane-meta mono">0 bytes</span>
+        </div>
+        <textarea id="input" class="mono" spellcheck="false" autocapitalize="off" autocomplete="off"
+          aria-label="SVG markup input"
+          placeholder="Paste or type SVG markup here… or click Upload / Sample above"></textarea>
+      </div>
+
+      <!-- Output pane -->
+      <div class="pane panel pane--output">
+        <div class="pane-head">
+          <h2 class="pane-title">Optimized output</h2>
+          <span id="outputStats" class="muted pane-meta mono"></span>
+        </div>
+
+        <div class="output-scroll">
+          <pre id="output" class="output-code mono" aria-live="polite" tabindex="0"><code id="outputCode"></code></pre>
+
+          <!-- Empty state -->
+          <div id="emptyState" class="empty output-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>
+            </svg>
+            <p>Your optimized SVG will appear here.</p>
+            <button id="btnSampleEmpty" class="btn btn--sm">Load a sample</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error panel -->
+    <section id="errorPanel" class="panel error-panel fade-in" role="alert" hidden>
+      <div class="error-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        <strong>Invalid SVG</strong>
+        <span id="errorLoc" class="badge badge--danger mono" hidden></span>
+      </div>
+      <p id="errorMsg" class="error-msg mono"></p>
+      <pre id="errorContext" class="error-context mono" aria-hidden="true" hidden></pre>
+    </section>
+
+    <!-- Stats bar -->
+    <section id="statsBar" class="panel stats-bar fade-in" aria-label="Optimization statistics" hidden>
+      <div class="stat">
+        <span class="stat-label">Original</span>
+        <span id="statOriginal" class="stat-value">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Optimized</span>
+        <span id="statOptimized" class="stat-value gradient-text">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Saved</span>
+        <span id="statSaved" class="stat-value">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Reduction</span>
+        <span id="statPercent" class="stat-value gradient-text">—</span>
+      </div>
+    </section>
+
+    <!-- Rendered preview -->
+    <section id="previewSection" class="editor preview-grid rise" aria-label="Rendered preview" hidden>
+      <div class="pane panel pane--preview">
+        <div class="pane-head">
+          <h2 class="pane-title">Before</h2>
+          <span id="previewBeforeMeta" class="muted pane-meta mono"></span>
+        </div>
+        <div id="previewBefore" class="preview-box" aria-label="Original SVG rendered"></div>
+      </div>
+      <div class="pane panel pane--preview">
+        <div class="pane-head">
+          <h2 class="pane-title">After</h2>
+          <span id="previewAfterMeta" class="muted pane-meta mono"></span>
+        </div>
+        <div id="previewAfter" class="preview-box" aria-label="Optimized SVG rendered"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer container">
+    Part of the <a href="https://github.com/kasapdev/svg-optimizer-pro">SVG Optimizer Pro</a> · MIT Licensed
+  </footer>
+
+  <!-- Shortcuts help modal -->
+  <div id="helpBackdrop" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="row between center" style="margin-bottom:var(--space-4)">
+        <h3 id="helpTitle" style="margin:0">Keyboard shortcuts</h3>
+        <button id="helpClose" class="btn btn--icon btn--ghost" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <table class="shortcut-table">
+        <tbody id="shortcutRows"></tbody>
+      </table>
+      <p class="muted" style="margin:var(--space-4) 0 0;font-size:13px">Tip: <kbd>mod</kbd> means <kbd>Ctrl</kbd> on Windows/Linux and <kbd>⌘</kbd> on macOS.</p>
+    </div>
+  </div>
+
+  <script src="assets/js/core.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
