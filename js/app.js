@@ -367,14 +367,49 @@
     inputStats.textContent = bytes.toLocaleString() + (bytes === 1 ? ' byte' : ' bytes');
   }
 
+  /* Strip the parts of an arbitrary (possibly untrusted) SVG that can run
+     script when injected into the page: <script> elements, every "on*"
+     event-handler attribute (onload/onerror/onclick/… — these fire even
+     though the markup is inserted via innerHTML, unlike <script> tags),
+     and javascript: URIs in href/xlink:href. This tool's whole purpose is
+     rendering SVGs pasted or uploaded from unknown sources, so the raw
+     "Before" markup is never guaranteed safe — only the sanitized copy is
+     ever rendered into the live DOM. Returns null if the markup can't be
+     parsed as XML at all. */
+  function sanitizeSvgForPreview(svgMarkup) {
+    try {
+      var doc = new DOMParser().parseFromString(svgMarkup, 'image/svg+xml');
+      if (doc.getElementsByTagName('parsererror').length > 0) return null;
+
+      var scripts = Array.prototype.slice.call(doc.getElementsByTagName('*')).filter(function (el) {
+        var tag = el.tagName ? el.tagName.toLowerCase() : '';
+        return tag === 'script' || tag.slice(tag.indexOf(':') + 1) === 'script';
+      });
+      scripts.forEach(function (el) { if (el.parentNode) el.parentNode.removeChild(el); });
+
+      var all = doc.getElementsByTagName('*');
+      for (var i = 0; i < all.length; i++) {
+        var el = all[i];
+        for (var j = el.attributes.length - 1; j >= 0; j--) {
+          var attr = el.attributes[j];
+          var name = attr.name.toLowerCase();
+          if (name.indexOf('on') === 0) {
+            el.removeAttribute(attr.name);
+          } else if ((name === 'href' || name === 'xlink:href') && /^\s*javascript:/i.test(attr.value)) {
+            el.removeAttribute(attr.name);
+          }
+        }
+      }
+      return new XMLSerializer().serializeToString(doc.documentElement);
+    } catch (e) {
+      return null;
+    }
+  }
+
   function renderPreview(container, metaEl, svgMarkup, byteCount) {
     container.innerHTML = '';
-    try {
-      // Already validated via DOMParser upstream; inject directly to render.
-      container.innerHTML = svgMarkup;
-    } catch (e) {
-      container.innerHTML = '<span class="muted">Could not render preview</span>';
-    }
+    var safe = sanitizeSvgForPreview(svgMarkup);
+    container.innerHTML = safe !== null ? safe : '<span class="muted">Could not render preview</span>';
     metaEl.textContent = humanBytes(byteCount);
   }
 
